@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
+import { RetouchPage } from "@/pages/RetouchPage";
 import { TranslatePage } from "@/pages/TranslatePage";
 
 const App = () => {
@@ -7,6 +8,7 @@ const App = () => {
     <Routes>
       <Route path="/" element={<Navigate to="/translate" replace />} />
       <Route path="/translate" element={<TranslatePage />} />
+      <Route path="/retouch/:translateId" element={<RetouchPage />} />
     </Routes>
   );
 };

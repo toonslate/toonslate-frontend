@@ -52,3 +52,18 @@ export const getTranslate = async (translateId: string): Promise<TranslateRespon
   const { data } = await api.get<TranslateResponse>(`/translate/${translateId}`);
   return data;
 };
+
+export interface EraseResponse {
+  resultImage: string;
+}
+
+export const eraseRegion = async (
+  translateId: string,
+  maskImage: string,
+): Promise<EraseResponse> => {
+  const { data } = await api.post<EraseResponse>("/erase", {
+    translateId,
+    maskImage,
+  });
+  return data;
+};
