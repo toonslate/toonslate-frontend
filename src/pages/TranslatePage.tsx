@@ -1,13 +1,13 @@
 // TODO: Layout 컴포넌트 분리 (Header 공통화)
 // TODO: 모바일 접속 시 안내 페이지 표시 (캔버스 에디터 미지원)
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { createTranslate, uploadImage } from "@/api/client";
 import { Header } from "@/components/Header";
 import { HeroSection } from "@/components/HeroSection";
-import { TranslateResult } from "@/components/TranslateResult";
 import { UploadZone } from "@/components/UploadZone";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import { useObjectUrl } from "@/hooks/useObjectUrl";
 import { translateQueries } from "@/queries/translateQueries";
 
 export const TranslatePage = () => {
+  const navigate = useNavigate();
+
   const [uploadId, setUploadId] = useState<string | null>(null);
   const [filename, setFilename] = useState<string | null>(null);
   const [translateId, setTranslateId] = useState<string | null>(null);
@@ -39,6 +41,14 @@ export const TranslatePage = () => {
   });
 
   const { data: translate, isFetching } = useQuery(translateQueries.detail(translateId));
+
+  const status = translate?.status;
+  const resultUrl = translate?.resultUrl;
+  useEffect(() => {
+    if (status === "completed" && resultUrl && translateId) {
+      void navigate(`/retouch/${translateId}`);
+    }
+  }, [status, resultUrl, translateId, navigate]);
 
   const handleFileSelect = (file: File) => {
     setUploadId(null);
@@ -65,10 +75,8 @@ export const TranslatePage = () => {
     translateMutation.reset();
   };
 
-  const isProcessing = translate?.status === "pending" || translate?.status === "processing";
-  const isCompleted = translate?.status === "completed";
-  const isFailed = translate?.status === "failed";
-  const isDone = isCompleted || isFailed;
+  const isProcessing = status === "pending" || status === "processing";
+  const isFailed = status === "failed";
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -126,15 +134,11 @@ export const TranslatePage = () => {
             {isProcessing ? (
               <Button disabled className="w-full">
                 <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                번역 중... ({translate?.status})
+                번역 중...
               </Button>
             ) : null}
 
-            {isCompleted && translate?.resultUrl ? (
-              <TranslateResult resultUrl={translate.resultUrl} />
-            ) : null}
-
-            {isDone ? (
+            {isFailed ? (
               <div className="mt-6 flex justify-center">
                 <Button variant="outline" onClick={handleReset}>
                   처음으로
