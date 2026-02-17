@@ -60,10 +60,12 @@ export interface EraseResponse {
 export const eraseRegion = async (
   translateId: string,
   maskImage: string,
+  sourceImage: string | null,
 ): Promise<EraseResponse> => {
   const { data } = await api.post<EraseResponse>("/erase", {
     translateId,
     maskImage,
+    ...(sourceImage !== null && { sourceImage }),
   });
   return data;
 };

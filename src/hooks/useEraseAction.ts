@@ -2,6 +2,11 @@ import { useMutation } from "@tanstack/react-query";
 
 import { eraseRegion } from "@/api/client";
 
+interface EraseInput {
+  maskBase64: string;
+  sourceBase64: string | null;
+}
+
 interface UseEraseActionOptions {
   translateId: string;
   onSuccess: (resultBase64: string) => void;
@@ -9,7 +14,8 @@ interface UseEraseActionOptions {
 
 export const useEraseAction = ({ translateId, onSuccess }: UseEraseActionOptions) => {
   const mutation = useMutation({
-    mutationFn: (maskBase64: string) => eraseRegion(translateId, maskBase64),
+    mutationFn: ({ maskBase64, sourceBase64 }: EraseInput) =>
+      eraseRegion(translateId, maskBase64, sourceBase64),
     onSuccess: (result) => {
       onSuccess(result.resultImage);
     },
