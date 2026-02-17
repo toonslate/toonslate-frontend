@@ -16,12 +16,11 @@ export const RetouchCanvas = ({
   onMouseUp,
 }: RetouchCanvasProps) => {
   return (
-    <div className="relative overflow-hidden rounded-lg border bg-white">
-      <canvas ref={canvasRef} className="block max-w-full" />
+    <div className="relative w-fit overflow-hidden rounded-lg border bg-white">
+      <canvas ref={canvasRef} className="block max-w-full h-auto" />
       <canvas
         ref={maskCanvasRef}
-        className="absolute left-0 top-0 block max-w-full cursor-crosshair"
-        style={{ width: "100%", height: "100%" }}
+        className="absolute inset-0 block cursor-crosshair"
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
