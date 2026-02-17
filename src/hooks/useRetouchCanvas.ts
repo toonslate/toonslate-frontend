@@ -3,7 +3,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { downloadBlob } from "@/utils/download";
 
 interface UseRetouchCanvasOptions {
-  imageUrl: string | undefined;
+  imageUrl: string | null | undefined;
+  onImageLoaded?: (base64: string) => void;
 }
 
 interface CanvasSize {
@@ -11,10 +12,14 @@ interface CanvasSize {
   height: number;
 }
 
-export const useRetouchCanvas = ({ imageUrl }: UseRetouchCanvasOptions) => {
+export const useRetouchCanvas = ({ imageUrl, onImageLoaded }: UseRetouchCanvasOptions) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasSize, setCanvasSize] = useState<CanvasSize>({ width: 0, height: 0 });
   const [imageError, setImageError] = useState(false);
+  const onImageLoadedRef = useRef(onImageLoaded);
+  useEffect(() => {
+    onImageLoadedRef.current = onImageLoaded;
+  });
 
   useEffect(() => {
     if (!imageUrl || !canvasRef.current) return;
@@ -33,6 +38,11 @@ export const useRetouchCanvas = ({ imageUrl }: UseRetouchCanvasOptions) => {
       setCanvasSize({ width: img.width, height: img.height });
       ctx.drawImage(img, 0, 0);
       setImageError(false);
+
+      const dataUrl = canvas.toDataURL("image/png");
+      const prefix = "data:image/png;base64,";
+      const base64 = dataUrl.startsWith(prefix) ? dataUrl.slice(prefix.length) : dataUrl;
+      onImageLoadedRef.current?.(base64);
     };
     img.onerror = () => {
       if (cancelled) return;

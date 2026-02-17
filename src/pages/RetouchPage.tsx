@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 
 import { useQuery } from "@tanstack/react-query";
@@ -6,6 +7,7 @@ import { Header } from "@/components/Header";
 import { BrushSizeSlider, ErrorMessage, RetouchCanvas, RetouchToolbar } from "@/components/retouch";
 import { useBrushDrawing } from "@/hooks/useBrushDrawing";
 import { useEraseAction } from "@/hooks/useEraseAction";
+import { useHistory } from "@/hooks/useHistory";
 import { useRetouchCanvas } from "@/hooks/useRetouchCanvas";
 import { translateQueries } from "@/queries/translateQueries";
 
@@ -20,6 +22,19 @@ export const RetouchPage = () => {
 
   const resultUrl = translate?.resultUrl;
 
+  const { push: pushHistory, undo, redo, reset: resetHistory, canUndo, canRedo } = useHistory();
+
+  useEffect(() => {
+    resetHistory();
+  }, [translateId, resetHistory]);
+
+  const handleImageLoaded = useCallback(
+    (base64: string) => {
+      pushHistory(base64);
+    },
+    [pushHistory],
+  );
+
   const {
     canvasRef,
     canvasSize,
@@ -27,7 +42,7 @@ export const RetouchPage = () => {
     drawImageFromBase64,
     getCanvasAsBase64,
     downloadCanvas,
-  } = useRetouchCanvas({ imageUrl: resultUrl });
+  } = useRetouchCanvas({ imageUrl: resultUrl, onImageLoaded: handleImageLoaded });
 
   const {
     maskCanvasRef,
@@ -42,12 +57,19 @@ export const RetouchPage = () => {
     getMaskAsBase64,
   } = useBrushDrawing(canvasSize);
 
+  const isErasingRef = useRef(false);
+
   const { erase, isErasing, eraseError } = useEraseAction({
     translateId: translateId ?? "",
     onSuccess: (resultBase64) => {
       drawImageFromBase64(resultBase64);
       clearMask();
+      pushHistory(resultBase64);
     },
+  });
+
+  useEffect(() => {
+    isErasingRef.current = isErasing;
   });
 
   const handleErase = () => {
@@ -56,6 +78,32 @@ export const RetouchPage = () => {
     const sourceBase64 = getCanvasAsBase64();
     erase({ maskBase64, sourceBase64 });
   };
+
+  const handleUndo = useCallback(() => {
+    const snapshot = undo();
+    if (snapshot) drawImageFromBase64(snapshot);
+  }, [undo, drawImageFromBase64]);
+
+  const handleRedo = useCallback(() => {
+    const snapshot = redo();
+    if (snapshot) drawImageFromBase64(snapshot);
+  }, [redo, drawImageFromBase64]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isErasingRef.current) return;
+      if (e.key.toLowerCase() === "z" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleUndo, handleRedo]);
 
   if (isLoading) {
     return (
@@ -101,8 +149,12 @@ export const RetouchPage = () => {
         <div className="mb-6">
           <RetouchToolbar
             isErasing={isErasing}
+            canUndo={canUndo}
+            canRedo={canRedo}
             onClearMask={clearMask}
             onErase={() => void handleErase()}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
             onDownload={handleDownload}
           />
         </div>
