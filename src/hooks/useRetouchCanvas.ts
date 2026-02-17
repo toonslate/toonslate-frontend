@@ -60,6 +60,15 @@ export const useRetouchCanvas = ({ imageUrl }: UseRetouchCanvasOptions) => {
     img.src = `data:image/png;base64,${base64}`;
   }, []);
 
+  const getCanvasAsBase64 = useCallback((): string | null => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+
+    const dataUrl = canvas.toDataURL("image/png");
+    const prefix = "data:image/png;base64,";
+    return dataUrl.startsWith(prefix) ? dataUrl.slice(prefix.length) : dataUrl;
+  }, []);
+
   const downloadCanvas = (filename: string) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -75,6 +84,7 @@ export const useRetouchCanvas = ({ imageUrl }: UseRetouchCanvasOptions) => {
     canvasSize,
     imageError,
     drawImageFromBase64,
+    getCanvasAsBase64,
     downloadCanvas,
   };
 };

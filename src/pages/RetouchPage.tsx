@@ -20,8 +20,14 @@ export const RetouchPage = () => {
 
   const resultUrl = translate?.resultUrl;
 
-  const { canvasRef, canvasSize, imageError, drawImageFromBase64, downloadCanvas } =
-    useRetouchCanvas({ imageUrl: resultUrl });
+  const {
+    canvasRef,
+    canvasSize,
+    imageError,
+    drawImageFromBase64,
+    getCanvasAsBase64,
+    downloadCanvas,
+  } = useRetouchCanvas({ imageUrl: resultUrl });
 
   const {
     maskCanvasRef,
@@ -47,7 +53,8 @@ export const RetouchPage = () => {
   const handleErase = () => {
     const maskBase64 = getMaskAsBase64();
     if (!maskBase64) return;
-    erase(maskBase64);
+    const sourceBase64 = getCanvasAsBase64();
+    erase({ maskBase64, sourceBase64 });
   };
 
   if (isLoading) {
