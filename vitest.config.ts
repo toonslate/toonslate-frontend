@@ -9,5 +9,9 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    coverage: {
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/components/ui/**"],
+    },
   },
 });
