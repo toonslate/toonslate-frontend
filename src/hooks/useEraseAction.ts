@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 
-import { eraseRegion } from "@/api/client";
+import { eraseRegion } from "@/api";
 
 interface EraseInput {
   maskBase64: string;

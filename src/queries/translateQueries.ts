@@ -1,7 +1,7 @@
 import { queryOptions, skipToken } from "@tanstack/react-query";
 
-import type { TranslateResponse } from "../api/client";
-import { getTranslate } from "../api/client";
+import type { TranslateResponse } from "@/api";
+import { getTranslate } from "@/api";
 
 export const translateQueries = {
   all: () => ["translate"] as const,
