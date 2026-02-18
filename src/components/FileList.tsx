@@ -1,5 +1,3 @@
-import { useEffect, useMemo } from "react";
-
 import { Badge } from "@/components/ui/badge";
 import type { FileEntry } from "@/pages/translate/translatePageReducer";
 import { MAX_BATCH_SIZE } from "@/pages/translate/translatePageReducer";
@@ -17,13 +15,9 @@ const formatFileSize = (bytes: number): string => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-const FileThumbnail = ({ file }: { file: File }) => {
-  const url = useMemo(() => URL.createObjectURL(file), [file]);
-
-  useEffect(() => () => URL.revokeObjectURL(url), [url]);
-
-  return <img src={url} alt={file.name} className="h-10 w-10 rounded object-cover" />;
-};
+const FileThumbnail = ({ src, alt }: { src: string; alt: string }) => (
+  <img src={src} alt={alt} className="h-10 w-10 rounded object-cover" />
+);
 
 export const FileList = ({ entries, disabled, onRemove }: FileListProps) => {
   if (entries.length === 0) return null;
@@ -41,7 +35,7 @@ export const FileList = ({ entries, disabled, onRemove }: FileListProps) => {
 
           return (
             <li key={entry.id} className="flex items-center gap-3 rounded-lg border px-3 py-2">
-              <FileThumbnail file={entry.file} />
+              <FileThumbnail src={entry.previewUrl} alt={entry.file.name} />
 
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">{entry.file.name}</p>

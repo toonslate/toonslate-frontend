@@ -5,6 +5,7 @@ export const MAX_BATCH_SIZE = 10;
 export interface FileEntry {
   id: string;
   file: File;
+  previewUrl: string;
   validation: ValidationResult | null;
   uploadError: string | null;
 }

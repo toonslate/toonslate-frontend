@@ -13,6 +13,7 @@ import {
 const createEntry = (overrides: Partial<FileEntry> = {}): FileEntry => ({
   id: crypto.randomUUID(),
   file: new File([new ArrayBuffer(1024)], "test.jpg", { type: "image/jpeg" }),
+  previewUrl: "blob:mock",
   validation: null,
   uploadError: null,
   ...overrides,

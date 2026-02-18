@@ -1,4 +1,4 @@
-import { useReducer, useRef } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { createBatch, getApiErrorMessage, uploadImage } from "@/api";
@@ -22,15 +22,34 @@ export const TranslatePage = () => {
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(translatePageReducer, INITIAL_STATE);
 
+  const entriesRef = useRef(state.entries);
+  entriesRef.current = state.entries;
+
+  useEffect(() => {
+    return () => {
+      for (const entry of entriesRef.current) {
+        URL.revokeObjectURL(entry.previewUrl);
+      }
+    };
+  }, []);
+
   const handleFilesSelect = (files: File[]) => {
     dispatch({ type: "CLEAR_WARNING" });
 
-    const entries: FileEntry[] = files.map((file) => ({
+    const capacity = MAX_BATCH_SIZE - state.entries.length;
+    if (files.length > capacity) {
+      dispatch({ type: "WARN", message: "최대 10장까지 업로드할 수 있습니다" });
+    }
+
+    const entries: FileEntry[] = files.slice(0, capacity).map((file) => ({
       id: crypto.randomUUID(),
       file,
+      previewUrl: URL.createObjectURL(file),
       validation: null,
       uploadError: null,
     }));
+
+    if (entries.length === 0) return;
 
     dispatch({ type: "ADD_FILES", entries });
 
@@ -48,6 +67,8 @@ export const TranslatePage = () => {
   };
 
   const handleRemove = (id: string) => {
+    const entry = state.entries.find((e) => e.id === id);
+    if (entry) URL.revokeObjectURL(entry.previewUrl);
     dispatch({ type: "REMOVE_FILE", id });
   };
 
@@ -113,6 +134,9 @@ export const TranslatePage = () => {
   };
 
   const handleReset = () => {
+    for (const entry of state.entries) {
+      URL.revokeObjectURL(entry.previewUrl);
+    }
     dispatch({ type: "RESET" });
   };
 
