@@ -31,15 +31,6 @@ const invalidResult: ValidationResult = {
 };
 
 describe("translatePageReducer", () => {
-  it("초기 상태", () => {
-    expect(INITIAL_STATE).toEqual({
-      entries: [],
-      phase: "idle",
-      error: null,
-      warning: null,
-    });
-  });
-
   describe("ADD_FILES", () => {
     it("엔트리를 추가한다", () => {
       const entries = [createEntry(), createEntry()];

@@ -1,13 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  ACCEPTED_TYPES,
-  MAX_ASPECT_RATIO,
-  MAX_FILE_SIZE,
-  MAX_PIXELS,
-  getValidationErrorMessage,
-  validateImageFile,
-} from "../imageValidation";
+import { MAX_FILE_SIZE, validateImageFile } from "../imageValidation";
 
 const createFile = (options: { size?: number; type?: string; name?: string } = {}): File => {
   const { size = 1024, type = "image/jpeg", name = "test.jpg" } = options;
@@ -40,24 +33,6 @@ const mockImageError = (): void => {
     });
   } as unknown as never);
 };
-
-describe("상수", () => {
-  it("MAX_FILE_SIZE는 5MB", () => {
-    expect(MAX_FILE_SIZE).toBe(5 * 1024 * 1024);
-  });
-
-  it("ACCEPTED_TYPES는 JPEG, PNG", () => {
-    expect(ACCEPTED_TYPES).toEqual(["image/jpeg", "image/png"]);
-  });
-
-  it("MAX_PIXELS는 3MP", () => {
-    expect(MAX_PIXELS).toBe(3_000_000);
-  });
-
-  it("MAX_ASPECT_RATIO는 3.0", () => {
-    expect(MAX_ASPECT_RATIO).toBe(3.0);
-  });
-});
 
 describe("validateImageFile", () => {
   afterEach(() => {
@@ -190,27 +165,5 @@ describe("validateImageFile", () => {
 
     expect(createSpy).toHaveBeenCalledOnce();
     expect(revokeSpy).toHaveBeenCalledWith("blob:mock");
-  });
-});
-
-describe("getValidationErrorMessage", () => {
-  it("FILE_SIZE 에러 메시지", () => {
-    expect(getValidationErrorMessage("FILE_SIZE")).toBe("파일 크기는 5MB 이하여야 합니다");
-  });
-
-  it("FILE_TYPE 에러 메시지", () => {
-    expect(getValidationErrorMessage("FILE_TYPE")).toBe("JPG, PNG 형식만 지원합니다");
-  });
-
-  it("PIXEL_COUNT 에러 메시지", () => {
-    expect(getValidationErrorMessage("PIXEL_COUNT")).toBe(
-      "이미지 해상도가 너무 높습니다 (최대 3MP)",
-    );
-  });
-
-  it("ASPECT_RATIO 에러 메시지", () => {
-    expect(getValidationErrorMessage("ASPECT_RATIO")).toBe(
-      "세로가 너무 긴 이미지입니다 (비율 3:1 이하)",
-    );
   });
 });

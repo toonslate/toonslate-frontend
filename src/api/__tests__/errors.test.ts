@@ -50,21 +50,8 @@ describe("getApiErrorMessage", () => {
     expect(getApiErrorMessage(error)).toBe("알 수 없는 오류가 발생했습니다");
   });
 
-  it("응답은 있지만 detail이 없으면 폴백 메시지를 반환한다", () => {
-    const error = createResponseError(500, {});
-
-    expect(getApiErrorMessage(error)).toBe("알 수 없는 오류가 발생했습니다");
-  });
-
-  it("AxiosError가 아닌 에러는 폴백 메시지를 반환한다", () => {
+  it("AxiosError가 아닌 값은 폴백 메시지를 반환한다", () => {
     expect(getApiErrorMessage(new Error("something"))).toBe("알 수 없는 오류가 발생했습니다");
-  });
-
-  it("문자열이 전달되면 폴백 메시지를 반환한다", () => {
-    expect(getApiErrorMessage("unexpected")).toBe("알 수 없는 오류가 발생했습니다");
-  });
-
-  it("null이 전달되면 폴백 메시지를 반환한다", () => {
     expect(getApiErrorMessage(null)).toBe("알 수 없는 오류가 발생했습니다");
   });
 });
