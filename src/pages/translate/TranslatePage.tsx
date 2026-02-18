@@ -195,6 +195,7 @@ export const TranslatePage = () => {
 
             <p className="mt-4 text-center text-xs text-muted-foreground">
               작업은 세션 동안만 유지됩니다. 다운로드 전 페이지를 닫으면 결과가 사라집니다.
+              <br />첫 요청 시 서버 준비로 시간이 걸릴 수 있습니다.
             </p>
           </CardContent>
         </Card>

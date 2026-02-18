@@ -1,6 +1,7 @@
 export const MAX_FILE_SIZE = 5 * 1024 * 1024;
 export const ACCEPTED_TYPES = ["image/jpeg", "image/png"] as const;
 export const MAX_PIXELS = 3_000_000;
+// TODO: 웹툰 세로 스트립에서 3:1 비율이 너무 타이트할 수 있음. 실사용 데이터 보고 완화 검토.
 export const MAX_ASPECT_RATIO = 3.0;
 
 export type ValidationError = "FILE_SIZE" | "FILE_TYPE" | "PIXEL_COUNT" | "ASPECT_RATIO";
