@@ -110,7 +110,7 @@ describe("useRetouchCanvas", () => {
     it("imageUrl이 설정되고 Image 로드 성공 시 canvasSize가 업데이트된다", async () => {
       const { result, rerender } = renderWithCanvas(null);
 
-      rerender({ imageUrl: "https://example.com/image.png" });
+      rerender({ imageUrl: "https://example.com/image.png", onImageLoaded: undefined });
 
       const img = mockImageInstances[0];
       img.width = 1024;
@@ -141,7 +141,7 @@ describe("useRetouchCanvas", () => {
     it("Image 로드 실패 시 imageError가 true가 된다", async () => {
       const { result, rerender } = renderWithCanvas(null);
 
-      rerender({ imageUrl: "https://example.com/broken.png" });
+      rerender({ imageUrl: "https://example.com/broken.png", onImageLoaded: undefined });
 
       const img = mockImageInstances[0];
       img.onerror!();
