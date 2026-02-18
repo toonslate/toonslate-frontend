@@ -33,19 +33,6 @@ export const uploadImage = async (file: File): Promise<UploadResponse> => {
   return data;
 };
 
-export const createTranslate = async (
-  uploadId: string,
-  sourceLanguage = "ko",
-  targetLanguage = "en",
-): Promise<TranslateResponse> => {
-  const { data } = await api.post<TranslateResponse>("/translate", {
-    uploadId,
-    sourceLanguage,
-    targetLanguage,
-  });
-  return data;
-};
-
 export const getTranslate = async (translateId: string): Promise<TranslateResponse> => {
   const { data } = await api.get<TranslateResponse>(`/translate/${translateId}`);
   return data;
