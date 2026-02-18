@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 
-import { createTranslate, uploadImage } from "@/api/client";
+import { createTranslate, uploadImage } from "@/api";
 import { Header } from "@/components/Header";
 import { HeroSection } from "@/components/HeroSection";
 import { UploadZone } from "@/components/UploadZone";

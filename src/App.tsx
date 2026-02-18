@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { RetouchPage } from "@/pages/RetouchPage";
-import { TranslatePage } from "@/pages/TranslatePage";
+import { TranslatePage } from "@/pages/translate/TranslatePage";
 
 const App = () => {
   return (
