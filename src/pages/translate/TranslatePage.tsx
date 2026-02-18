@@ -1,82 +1,129 @@
-// TODO: Layout 컴포넌트 분리 (Header 공통화)
-// TODO: 모바일 접속 시 안내 페이지 표시 (캔버스 에디터 미지원)
-import { useEffect, useState } from "react";
+import { useReducer, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
-
-import { createTranslate, uploadImage } from "@/api";
+import { createBatch, getApiErrorMessage, uploadImage } from "@/api";
+import { FileList } from "@/components/FileList";
 import { Header } from "@/components/Header";
 import { HeroSection } from "@/components/HeroSection";
 import { UploadZone } from "@/components/UploadZone";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useObjectUrl } from "@/hooks/useObjectUrl";
-import { translateQueries } from "@/queries/translateQueries";
+import { validateImageFile } from "@/utils/imageValidation";
+
+import {
+  type FileEntry,
+  INITIAL_STATE,
+  MAX_BATCH_SIZE,
+  translatePageReducer,
+} from "./translatePageReducer";
 
 export const TranslatePage = () => {
   const navigate = useNavigate();
+  const [state, dispatch] = useReducer(translatePageReducer, INITIAL_STATE);
 
-  const [uploadId, setUploadId] = useState<string | null>(null);
-  const [filename, setFilename] = useState<string | null>(null);
-  const [translateId, setTranslateId] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const handleFilesSelect = (files: File[]) => {
+    dispatch({ type: "CLEAR_WARNING" });
 
-  const previewUrl = useObjectUrl(selectedFile);
+    const entries: FileEntry[] = files.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      validation: null,
+      uploadError: null,
+    }));
 
-  const uploadMutation = useMutation({
-    mutationFn: uploadImage,
-    onSuccess: (data) => {
-      setUploadId(data.uploadId);
-      setFilename(data.filename);
-    },
-  });
+    dispatch({ type: "ADD_FILES", entries });
 
-  const translateMutation = useMutation({
-    mutationFn: (uploadId: string) => createTranslate(uploadId),
-    onSuccess: (data) => {
-      setTranslateId(data.translateId);
-    },
-  });
-
-  const { data: translate, isFetching } = useQuery(translateQueries.detail(translateId));
-
-  const status = translate?.status;
-  const resultUrl = translate?.resultUrl;
-  useEffect(() => {
-    if (status === "completed" && resultUrl && translateId) {
-      void navigate(`/retouch/${translateId}`);
+    for (const entry of entries) {
+      validateImageFile(entry.file).then(
+        (result) => dispatch({ type: "VALIDATION_COMPLETE", id: entry.id, result }),
+        () =>
+          dispatch({
+            type: "VALIDATION_COMPLETE",
+            id: entry.id,
+            result: { valid: false, errors: ["FILE_TYPE"] },
+          }),
+      );
     }
-  }, [status, resultUrl, translateId, navigate]);
-
-  const handleFileSelect = (file: File) => {
-    setUploadId(null);
-    setFilename(null);
-    setTranslateId(null);
-    setSelectedFile(file);
-    uploadMutation.reset();
-    translateMutation.reset();
-    uploadMutation.mutate(file);
   };
 
-  const handleTranslate = () => {
-    if (!uploadId) return;
-    translateMutation.mutate(uploadId);
+  const handleRemove = (id: string) => {
+    dispatch({ type: "REMOVE_FILE", id });
   };
 
-  // TODO: AbortController로 진행 중인 업로드 요청도 취소 (현재는 상태만 초기화)
+  const isSubmittingRef = useRef(false);
+
+  const handleSubmit = () => {
+    void submitFiles();
+  };
+
+  const submitFiles = async () => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+
+    try {
+      const validEntries = state.entries.filter((e) => e.validation?.valid);
+      if (validEntries.length === 0) return;
+
+      dispatch({ type: "SUBMIT_START" });
+
+      const results = await Promise.allSettled(validEntries.map((e) => uploadImage(e.file)));
+
+      const uploadIds: string[] = [];
+
+      results.forEach((result, i) => {
+        const entry = validEntries[i];
+        if (result.status === "fulfilled") {
+          uploadIds.push(result.value.uploadId);
+        } else {
+          dispatch({
+            type: "UPLOAD_ERROR",
+            id: entry.id,
+            error: getApiErrorMessage(result.reason),
+          });
+        }
+      });
+
+      if (uploadIds.length === 0) {
+        dispatch({ type: "ERROR", message: "모든 파일 업로드에 실패했습니다" });
+        return;
+      }
+
+      const hasUploadErrors = results.some((r) => r.status === "rejected");
+
+      dispatch({ type: "CREATING_BATCH" });
+
+      const batch = await createBatch(uploadIds);
+      dispatch({ type: "BATCH_CREATED", batchId: batch.batchId });
+
+      if (hasUploadErrors) {
+        const failedCount = validEntries.length - uploadIds.length;
+        dispatch({
+          type: "ERROR",
+          message: `${failedCount}장 업로드 실패. 성공한 ${uploadIds.length}장으로 배치가 생성되었습니다.`,
+        });
+      } else {
+        void navigate(`/batch/${batch.batchId}`);
+      }
+    } catch (error) {
+      dispatch({ type: "ERROR", message: getApiErrorMessage(error) });
+    } finally {
+      isSubmittingRef.current = false;
+    }
+  };
+
   const handleReset = () => {
-    setUploadId(null);
-    setFilename(null);
-    setTranslateId(null);
-    setSelectedFile(null);
-    uploadMutation.reset();
-    translateMutation.reset();
+    dispatch({ type: "RESET" });
   };
 
-  const isProcessing = status === "pending" || status === "processing";
-  const isFailed = status === "failed";
+  const validCount = state.entries.filter((e) => e.validation?.valid).length;
+  const hasValidFiles = validCount > 0;
+  const isIdle = state.phase === "idle";
+  const isValidating = state.phase === "validating";
+  const isUploading = state.phase === "uploading";
+  const isCreatingBatch = state.phase === "creating_batch";
+  const isError = state.phase === "error";
+  const isBusy = isUploading || isCreatingBatch;
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -88,66 +135,66 @@ export const TranslatePage = () => {
         <Card>
           <CardContent className="pt-6">
             <UploadZone
-              filename={filename}
-              previewUrl={previewUrl}
-              isUploading={uploadMutation.isPending}
-              hasUpload={!!uploadId}
-              onFileSelect={handleFileSelect}
-              onClear={handleReset}
+              disabled={state.entries.length >= MAX_BATCH_SIZE || isBusy}
+              onFilesSelect={handleFilesSelect}
             />
 
-            {uploadMutation.isError ? (
-              <Alert variant="destructive" className="mb-4">
-                <AlertDescription>{uploadMutation.error.message}</AlertDescription>
-              </Alert>
-            ) : null}
+            <FileList entries={state.entries} disabled={isBusy} onRemove={handleRemove} />
 
-            {translateMutation.isError ? (
-              <Alert variant="destructive" className="mb-4">
-                <AlertDescription>{translateMutation.error.message}</AlertDescription>
+            {state.warning && (
+              <Alert className="mb-4">
+                <AlertDescription>{state.warning}</AlertDescription>
               </Alert>
-            ) : null}
+            )}
 
-            {isFailed && translate?.errorMessage ? (
+            {state.error && (
               <Alert variant="destructive" className="mb-4">
-                <AlertDescription>{translate.errorMessage}</AlertDescription>
+                <AlertDescription>{state.error}</AlertDescription>
               </Alert>
-            ) : null}
+            )}
 
-            {uploadId && !translateId ? (
-              <Button
-                onClick={handleTranslate}
-                disabled={translateMutation.isPending}
-                className="w-full"
-              >
-                {translateMutation.isPending ? "작업 생성 중..." : "번역 시작"}
+            {isIdle && hasValidFiles && (
+              <Button onClick={handleSubmit} className="w-full">
+                번역 시작 ({validCount}장)
               </Button>
-            ) : null}
+            )}
 
-            {translateId && !translate && isFetching ? (
+            {isValidating && (
               <Button disabled className="w-full">
                 <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                상태 확인 중...
+                검증 중...
               </Button>
-            ) : null}
+            )}
 
-            {isProcessing ? (
+            {isUploading && (
               <Button disabled className="w-full">
                 <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                번역 중...
+                업로드 중...
               </Button>
-            ) : null}
+            )}
 
-            {isFailed ? (
-              <div className="mt-6 flex justify-center">
+            {isCreatingBatch && (
+              <Button disabled className="w-full">
+                <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                배치 생성 중...
+              </Button>
+            )}
+
+            {isError && (
+              <div className="mt-6 flex justify-center gap-3">
                 <Button variant="outline" onClick={handleReset}>
                   처음으로
                 </Button>
+                {state.batchId && (
+                  <Button onClick={() => void navigate(`/batch/${state.batchId}`)}>
+                    결과 확인
+                  </Button>
+                )}
               </div>
-            ) : null}
+            )}
 
             <p className="mt-4 text-center text-xs text-muted-foreground">
-              ⚠️ 작업은 세션 동안만 유지됩니다. 다운로드 전 페이지를 닫으면 결과가 사라집니다.
+              작업은 세션 동안만 유지됩니다. 다운로드 전 페이지를 닫으면 결과가 사라집니다.
             </p>
           </CardContent>
         </Card>
