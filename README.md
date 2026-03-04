@@ -6,6 +6,8 @@
 
 > 🔗 배포: https://www.toonslate.site
 
+> 💾 저장소: [프론트엔드](https://github.com/toonslate/toonslate-frontend), [백엔드](https://github.com/toonslate/toonslate-backend)
+
 ## 📖 Table of Contents
 
 - [💡 Motivation](#-motivation)
